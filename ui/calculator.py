@@ -1060,25 +1060,41 @@ class ModernCalculator(QWidget):
             result_latex = sp.latex(res["result_expr"])
             texto_hist = ""
             
-            # --- ESCUDO ANTI-NaN Y FORMATO DE SALIDA ---
+           # --- ESCUDO ANTI-NaN Y FORMATO DE SALIDA ---
             if "numeric_result" in res and res["numeric_result"] is not None:
                 num_res = res["numeric_result"]
                 try:
-                    val = float(num_res)
+                    import sympy as sp
                     import math
+                    
+                    # 1. Escudo Analítico: Revisar si SymPy encontró un infinito (oo, -oo, o zoo)
+                    if res["result_expr"].has(sp.oo, -sp.oo, sp.zoo):
+                        raise ValueError("Divergente")
+                        
+                    # 2. Escudo Numérico: Revisar si SciPy devolvió algo indefinido
+                    val = float(num_res)
                     if math.isnan(val) or math.isinf(val):
                         raise ValueError("Divergente")
                 except:
-                    self.show_error("Error matemático", "Resultado indefinido (NaN/Inf).")
+                    err_title = "Error matemático" if self.lang == "es" else "Mathematical error"
+                    err_desc = "Resultado divergente o indefinido (NaN/Inf)." if self.lang == "es" else "Divergent or undefined result (NaN/Inf)."
+                    self.show_error(err_title, err_desc)
                     return
                 
+                # VARIABLES DINÁMICAS PARA EL IDIOMA
+                lbl_analitico = "Analítico" if self.lang == "es" else "Analytical"
+                lbl_numerico = "Numérico" if self.lang == "es" else "Numerical"
+                
+                result_latex = sp.latex(res["result_expr"])
                 result_html = (
                     '<div class="math-block">'
-                    rf'\[\text{{Analítico}} = {result_latex}\]'
-                    rf'\[\text{{Numérico}} = {sp.latex(sp.N(num_res, 12))}\]'
+                    rf'\[\text{{{lbl_analitico}}} = {result_latex}\]'
+                    rf'\[\text{{{lbl_numerico}}} = {sp.latex(sp.N(num_res, 12))}\]'
                     '</div>'
                 )
                 self.result_view.set_math_text(result_html)
+                
+                # Para el historial
                 texto_hist = f"Analítico: {result_latex} | Numérico: {sp.N(num_res, 6)}"
                 
                 # Restaurado: Activación del botón de gráficas

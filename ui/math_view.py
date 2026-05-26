@@ -43,7 +43,6 @@ class MathView(QFrame):
         layout.addWidget(self.web)
 
         if QWebEngineView is not None:
-            # Aquí vinculamos MathJax apuntando a la carpeta assets
             base_path = ruta_recurso("assets") 
             base_url = QUrl.fromLocalFile(base_path + "/")
             
@@ -91,6 +90,7 @@ class MathView(QFrame):
         wrap_flex = "display: flex; align-items: center; height: 100vh;" if self._compact else ""
         bg_css = "transparent" if self._transparent_bg else theme["bg"]
         
+        # Uso de Variables CSS para que los inyectados post-cambio hereden los colores correctos.
         return f"""
         <!doctype html>
         <html>
@@ -104,19 +104,25 @@ class MathView(QFrame):
             </script>
             <script defer src="mathjax/tex-svg.js"></script>
             <style>
+                :root {{
+                    --bg-color: {bg_css};
+                    --fg-color: {theme["fg"]};
+                    --muted-color: {theme["muted"]};
+                    --accent-color: {theme["accent"]};
+                }}
                 html, body {{
                     margin: 0; padding: 0; width: 100%; height: 100%;
-                    {body_overflow} background: {bg_css}; color: {theme["fg"]};
+                    {body_overflow} background: var(--bg-color); color: var(--fg-color);
                     font-family: "Segoe UI", Arial, sans-serif; font-size: {font_size};
                 }}
                 * {{ box-sizing: border-box; }}
                 body {{ overflow-wrap: anywhere; }}
                 .wrap {{ {padding_css} {wrap_flex} }}
-                .placeholder {{ color: {theme["muted"]}; }}
-                .math-block {{ font-size: {math_font_size}; line-height: 1.2; margin: 0; color: {theme["fg"]}; }}
+                .placeholder {{ color: var(--muted-color); }}
+                .math-block {{ font-size: {math_font_size}; line-height: 1.2; margin: 0; color: var(--fg-color); }}
                 .steps {{ font-size: 14px; line-height: 1.55; }}
-                .step {{ border-left: 3px solid {theme["accent"]}; padding: 10px 0 10px 12px; margin: 0 0 12px; }}
-                .step-title {{ color: {theme["muted"]}; font-weight: 700; margin-bottom: 6px; letter-spacing: .01em; }}
+                .step {{ border-left: 3px solid var(--accent-color); padding: 10px 0 10px 12px; margin: 0 0 12px; }}
+                .step-title {{ color: var(--muted-color); font-weight: 700; margin-bottom: 6px; letter-spacing: .01em; }}
                 .error {{ border-left-color: #ffb703; }}
                 mjx-container[jax="SVG"][display="true"] {{ margin: {display_margin}; }}
             </style>
@@ -134,18 +140,10 @@ class MathView(QFrame):
                 }};
                 window.setCalculatorTheme = function (theme, is_transparent) {{
                     var bg_color = is_transparent ? "transparent" : theme.bg;
-                    document.documentElement.style.background = bg_color;
-                    document.body.style.background = bg_color;
-                    document.body.style.color = theme.fg;
-                    document.querySelectorAll(".placeholder, .step-title").forEach(function (el) {{
-                        el.style.color = theme.muted;
-                    }});
-                    document.querySelectorAll(".math-block").forEach(function (el) {{
-                        el.style.color = theme.fg;
-                    }});
-                    document.querySelectorAll(".step").forEach(function (el) {{
-                        if (!el.classList.contains("error")) el.style.borderLeftColor = theme.accent;
-                    }});
+                    document.documentElement.style.setProperty('--bg-color', bg_color);
+                    document.documentElement.style.setProperty('--fg-color', theme.fg);
+                    document.documentElement.style.setProperty('--muted-color', theme.muted);
+                    document.documentElement.style.setProperty('--accent-color', theme.accent);
                 }};
             </script>
         </body>

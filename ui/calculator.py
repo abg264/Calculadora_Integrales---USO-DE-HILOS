@@ -194,6 +194,8 @@ class ModernCalculator(QWidget):
         limits_layout.setContentsMargins(0, 0, 0, 0)
         limits_layout.setSpacing(8)
 
+        self.var_labels = [] # <-- LISTA NUEVA PARA ETIQUETAS
+
         for i in range(3):
             single_limit_layout = QVBoxLayout()
             single_limit_layout.setSpacing(4)
@@ -222,11 +224,20 @@ class ModernCalculator(QWidget):
             lower.setValidator(math_validator)
             lower.returnPressed.connect(self.calculate_integral) 
 
+
+            # --- CÓDIGO NUEVO ---
+            var_label = QLabel("")
+            var_label.setAlignment(Qt.AlignCenter)
+            var_label.setObjectName("subtitle") # Usa tu estilo gris tenue
+            
             single_limit_layout.addWidget(upper)
             single_limit_layout.addWidget(integral_label)
             single_limit_layout.addWidget(lower)
+            single_limit_layout.addWidget(var_label) # Añadimos el label abajo
+            
             limits_layout.addLayout(single_limit_layout)
             self.limit_widgets.append((upper, integral_label, lower))
+            self.var_labels.append(var_label) # Guardamos la etiqueta
 
         self.input = QLineEdit()
         self.input.setPlaceholderText(self.texts[self.lang]["input_placeholder"])
@@ -335,10 +346,39 @@ class ModernCalculator(QWidget):
 
         for i, widgets in enumerate(self.limit_widgets):
             upper, label, lower = widgets
+            var_lbl = self.var_labels[i] # <-- NUEVO: Obtenemos el label correspondiente
+
             visible = i < num_limits
             upper.setVisible(visible)
             label.setVisible(visible)
             lower.setVisible(visible)
+
+            # --- NUEVO: Lógica para mostrar a qué variable va cada límite ---
+            if visible:
+                if idx_type == 3: # Doble Polar
+                    if i == 0:
+                        var_lbl.setText("θ (Ángulo)" if self.lang == "es" else "θ (Angle)")
+                    elif i == 1:
+                        var_lbl.setText("r (Radio)" if self.lang == "es" else "r (Radius)")
+                elif idx_type == 1: # Doble Normal
+                    if i == 0:
+                        var_lbl.setText("Exterior" if self.lang == "es" else "Outer")
+                    elif i == 1:
+                        var_lbl.setText("Interior" if self.lang == "es" else "Inner")
+                elif idx_type == 2: # Triple
+                    if i == 0:
+                        var_lbl.setText("Exterior" if self.lang == "es" else "Outer")
+                    elif i == 1:
+                        var_lbl.setText("Media" if self.lang == "es" else "Middle")
+                    elif i == 2:
+                        var_lbl.setText("Interior" if self.lang == "es" else "Inner")
+                else:
+                    var_lbl.setText("")
+                
+                # Mostrar el texto si no está vacío
+                var_lbl.setVisible(bool(var_lbl.text()))
+            else:
+                var_lbl.setVisible(False)
 
         self.update_input_preview()
 
